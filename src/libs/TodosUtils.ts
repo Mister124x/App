@@ -50,6 +50,7 @@ type CreateTodosReportsAndTransactionsParams = {
  * Buckets every transaction by its report ID. Shared by every to-do consumer that needs per-report transactions.
  */
 function buildTransactionsByReportID(allTransactions: OnyxCollection<Transaction>): Record<string, Transaction[]> {
+    const exportActionByReportID: Record<string, ReportAction> = {};
     const transactionsByReportID: Record<string, Transaction[]> = {};
     if (!allTransactions) {
         return transactionsByReportID;
@@ -223,6 +224,14 @@ function createTodosReportsAndTransactions({
         }
         if (reportMatchesTodoBucket(CONST.SEARCH.SEARCH_KEYS.PAY, report, context)) {
             reportsToPay.push(report);
+            const reportActions = Object.values(allReportActions?.[`${ONYXKEYS.COLLECTION.REPORT_ACTIONS}${report.reportID}`] ?? {});
+            const latestExport = reportActions
+                .filter(action => action.actionName === CONST.REPORT.ACTIONS.TYPE.EXPORTED)
+                .sort((a, b) => (b.created ?? '').localeCompare(a.created ?? ''))
+                .at(0);
+            if (latestExport) {
+                exportActionByReportID[report.reportID] = latestExport;
+            }
         }
         if (reportMatchesTodoBucket(CONST.SEARCH.SEARCH_KEYS.EXPORT, report, context)) {
             reportsToExport.push(report);
