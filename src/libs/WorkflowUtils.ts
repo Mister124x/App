@@ -655,6 +655,16 @@ function updateWorkflowDataOnApproverRemoval({approvalWorkflows, removedApprover
             };
         }
 
+        // If it is a non-default workflow and the removed approver is the sole approver,
+        // mark it for removal to avoid convertApprovalWorkflowToPolicyEmployees throwing.
+        if (!workflow.isDefault && isSingleApprover && isApproverToRemove) {
+            return {
+                ...workflow,
+                approvers: [],
+                removeApprovalWorkflow: true,
+            };
+        }
+
         // Return the unchanged workflow in other cases
         return workflow;
     });
