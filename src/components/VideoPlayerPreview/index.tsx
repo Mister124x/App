@@ -24,6 +24,7 @@ import type {Dimensions} from '@src/types/utils/Layout';
 
 import type {SourceLoadEventPayload} from 'expo-video';
 import type {GestureResponderEvent} from 'react-native';
+import {Image} from 'react-native';
 
 import {useNavigation} from '@react-navigation/native';
 import React, {useEffect, useState} from 'react';
@@ -61,7 +62,21 @@ function VideoPlayerPreview({videoUrl, thumbnailUrl, reportID, fileName, videoDi
 
     const [isThumbnail, setIsThumbnail] = useState(true);
     const [webMeasuredDimensions, setWebMeasuredDimensions] = useState<Dimensions | null>(null);
-    const measuredDimensions = getPlatform() === CONST.PLATFORM.WEB && videoUrl && webMeasuredDimensions ? webMeasuredDimensions : videoDimensions;
+    const [nativeMeasuredDimensions, setNativeMeasuredDimensions] = useState<Dimensions | null>(null);
+
+    useEffect(() => {
+        if (!thumbnailUrl || getPlatform() === CONST.PLATFORM.WEB) {
+            return;
+        }
+        Image.getSize(thumbnailUrl, (width, height) => {
+            setNativeMeasuredDimensions({width, height});
+        });
+    }, [thumbnailUrl]);
+
+    const measuredDimensions =
+        getPlatform() === CONST.PLATFORM.WEB && videoUrl && webMeasuredDimensions
+            ? webMeasuredDimensions
+            : (nativeMeasuredDimensions ?? videoDimensions);
     const {thumbnailDimensionsStyles} = useThumbnailDimensions(measuredDimensions.width, measuredDimensions.height);
     const isOnSearch = useIsOnSearch();
     const navigation = useNavigation();
