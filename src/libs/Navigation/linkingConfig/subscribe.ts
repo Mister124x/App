@@ -5,10 +5,11 @@ import type {RootNavigatorParamList} from '@libs/Navigation/types';
 
 import CONST from '@src/CONST';
 import ROUTES from '@src/ROUTES';
+import SCREENS from '@src/SCREENS';
 
 import type {LinkingOptions} from '@react-navigation/native';
 
-import {findFocusedRoute} from '@react-navigation/native';
+import {CommonActions, findFocusedRoute} from '@react-navigation/native';
 import {Linking} from 'react-native';
 
 /**
@@ -65,6 +66,18 @@ const subscribe: LinkingOptions<RootNavigatorParamList>['subscribe'] = (listener
         if (!hasAuthToken() && getPathnameFromURL(url).includes(`/${ROUTES.REPORT}/`)) {
             return;
         }
+        // When the app is warm-resumed on a non-Inbox tab and a /r/<reportID> deep link arrives,
+        // React Navigation's partial-state merge targets the currently focused tab navigator.
+        // That navigator does not host Report screens, so the merge falls back to Home.
+        // Ensure the Inbox tab is focused before handing off to the linking listener.
+        if (hasAuthToken() && getPathnameFromURL(url).includes(`/${ROUTES.REPORT}/`)) {
+            const state = navigationRef.current?.getRootState();
+            const focusedRoute = state ? findFocusedRoute(state) : undefined;
+            if (focusedRoute?.name !== SCREENS.HOME) {
+                navigationRef.current?.dispatch(CommonActions.navigate(SCREENS.HOME));
+            }
+        }
+
         listener(url);
     });
     return () => subscription.remove();
